@@ -20,4 +20,4 @@ const requestSchema = new Schema({
 
 }, { timestamps: true })
 
-export const Request = mongoose.models.Request || model("Request", requestSchema)
+export const Request = mongoose.models.requests || model("Request", requestSchema)
