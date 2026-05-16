@@ -9,9 +9,10 @@ const port = process.env.PORT || 3000
 // =====  MIDDLEWARE ======
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use("/avatar", express.static("public/avatars"));
+
 
 // =====  ROUTER ======
-
 app.use("/user", userRotues)
 
 
