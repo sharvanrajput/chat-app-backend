@@ -4,7 +4,7 @@ import { User } from "../models/user.js"
 export const newUser = async (req, res) => {
     try {
         const avatar = {
-            public_id: "aasdf",
+            public_id: "123",
             url: "asda"
         }
         await User.create({
