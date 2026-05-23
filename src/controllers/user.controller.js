@@ -2,6 +2,12 @@ import { User } from "../models/user.js"
 import { generateToken } from "../utils/features.js"
 import bcrypt from "bcrypt"
 
+const options = {
+    maxAge: 15 * 24 * 60 * 60 * 1000,
+    sameSite: "none",
+    httpOnly: true,
+    secure: true
+}
 
 export const newUser = async (req, res) => {
     try {
@@ -21,7 +27,7 @@ export const newUser = async (req, res) => {
         const newuser = await User.create({ name, username, password, avatar, bio })
 
         const token = generateToken(newuser)
-        res.cookie("token", token)
+        res.cookie("token", token, options)
         res.status(201).json({ success: true, user: newuser })
     } catch (error) {
         res.status(500).json({ success: false, message: error.message || "something went wrong" })
@@ -30,8 +36,6 @@ export const newUser = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-
-
         const { username, password } = req.body || {}
 
         if (!username || !password) {
@@ -41,11 +45,11 @@ export const login = async (req, res) => {
             })
         }
 
-        const existingUser = await User.findOne({ username }).select("password")
+        const existingUser = await User.findOne({ username }).select("+password")
         if (!existingUser) {
             return res.status(400).json({ success: false, message: "User not found" })
         }
-
+        
         const isPasswordCorrect = await bcrypt.compare(password, existingUser.password)
 
         if (!isPasswordCorrect) {
@@ -53,8 +57,8 @@ export const login = async (req, res) => {
         }
 
         const token = generateToken(existingUser)
-        res.cookie("token", token)
-        res.status(200).json({ success: true, message: "Login Successfull" })
+        res.cookie("token", token, options)
+        res.status(200).json({ success: true, message: `Welcome Back ${existingUser?.name}` })
     } catch (error) {
         res.status(500).json({ success: false, message: error.message || "something went wrong in login" })
     }
