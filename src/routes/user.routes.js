@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { login, newUser } from "../controllers/user.controller.js";
-import { uploadImage } from "../middlewares/uploadPhoto.js";
+import { login, logout, newUser } from "../controllers/user.controller.js";
+import { singleAvatar } from "../middlewares/uploadPhoto.js";
 
 const userRotues = Router()
 
-userRotues.post("/new", uploadImage("avatars").single('avatar'), newUser)
+userRotues.post("/new", singleAvatar, newUser)
 userRotues.post("/login", login)
+userRotues.post("/logout", logout)
 
 
 export default userRotues

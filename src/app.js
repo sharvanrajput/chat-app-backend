@@ -2,6 +2,7 @@ import express from "express"
 import dotenv from "dotenv"
 import userRotues from "./routes/user.routes.js"
 import { connectdb } from "./config/db.js"
+import cookieParser from "cookie-parser"
 dotenv.config()
 const app = express()
 const port = process.env.PORT || 3000
@@ -9,11 +10,12 @@ const port = process.env.PORT || 3000
 // =====  MIDDLEWARE ======
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use(cookieParser())
 app.use("/avatar", express.static("public/avatars"));
 
 
 // =====  ROUTER ======
-app.use("/user", userRotues)
+app.use("/api/user", userRotues)
 
 
 connectdb().then(() => {
