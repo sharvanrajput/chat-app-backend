@@ -2,6 +2,8 @@
 import bcrypt from "bcryptjs"
 import { User, type ImgType } from "../models/user.js"
 import { asyncHandler, gentoken, uploadOnCloudinary } from "../utils/helper.js"
+import { error } from "node:console"
+import { AppError } from "../utils/error.js"
 
 
 const option = {
@@ -16,16 +18,16 @@ export const signup = asyncHandler(async (req, res, next) => {
     const avatar = req.file
 
     if ([name, username, password, bio].some(field => typeof field !== "string" || field.trim() === "")) {
-        return res.status(400).json({ success: false, message: "all fields are required" })
+        return next(new AppError(400, "all fields are required"))
     }
     if (!avatar) {
-        return res.status(400).json({ success: false, message: "avatar is  required" })
+        return next(new AppError(400, "avatar is  required"))
     }
 
     const existing = await User.findOne({ username })
 
     if (existing) {
-        return res.status(400).json({ success: false, message: "user already exist" })
+        return next(new AppError(400, "user already exist"))
     }
     const profiledata = await uploadOnCloudinary(avatar.path)
     const { _id } = await User.create({
@@ -49,23 +51,32 @@ export const signin = asyncHandler(async (req, res, next) => {
     const { username, password } = req.body
 
     if ([username, password].some(field => typeof field !== "string" || field.trim() === "")) {
-        return res.status(400).json({ success: false, message: "all fields are required" })
+        return next(new AppError(400, "all fields are required"))
     }
 
     const user = await User.findOne({ username }).select("+password")
 
     if (!user) {
-        return res.status(400).json({ success: false, message: "user not exist" })
+        return next(new AppError(400, "user not exist"))
     }
 
     const isCorrect = await bcrypt.compare(password, user.password)
 
     if (!isCorrect) {
-        return res.status(400).json({ success: false, message: "invalid password" })
+        return next(new AppError(400, "invalid password"))
     }
 
     const token = gentoken(user._id.toString())
 
-    return res.cookie("token", token, option).status(201).json({ success: true, message: "Login Successfuly" })
+    return res.cookie("token", token, option).status(200).json({ success: true, message: "Login Successfuly" })
 
+})
+
+export const logout = asyncHandler(async (req, res, next) => {
+    return res.clearCookie("token", option).status(200).json({ success: true, message: "logout Successfuly" })
+})
+export const me = asyncHandler(async (req, res, next) => {
+    console.log(req.user.id)
+    const user = await User.findById(req.user.id)
+    return res.status(200).json({ success: true, message: "logout Successfuly", user })
 })

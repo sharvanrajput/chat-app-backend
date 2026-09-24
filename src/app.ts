@@ -1,8 +1,9 @@
-import express, { type NextFunction, type Request, type Response } from "express";
-import userRouter from "./routes/user.js";
-import dotenv from "dotenv"
+import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
+import express from "express";
 import { connectDb } from "./config/db.js";
-import type { Error } from "mongoose";
+import userRouter from "./routes/user.js";
+import { errorHandler } from "./utils/error.js";
 dotenv.config()
 
 const app = express()
@@ -10,16 +11,12 @@ const port = 4000
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use(cookieParser())
 
 app.use("/api/user", userRouter)
 
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    res.status(500).json({
-        success: false,
-        message: err.message || "Something went wrong"
-    });
-});
+app.use(errorHandler);
 
 connectDb().then(() => {
     app.listen(port, () => {
