@@ -6,7 +6,7 @@ export interface ImgType {
     url: string
 }
 
-interface User {
+export interface User {
     avatar: ImgType,
     name: string,
     username: string,

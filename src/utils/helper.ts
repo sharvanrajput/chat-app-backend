@@ -2,6 +2,8 @@ import "dotenv/config"
 import type { NextFunction, Request, Response } from "express"
 import jwt from "jsonwebtoken"
 import { v2 as cloudinary } from "cloudinary"
+import { unlinkSync } from "fs"
+import type { User } from "../models/user.js"
 
 export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
     return (req: Request, res: Response, next: NextFunction) => {
@@ -25,10 +27,15 @@ cloudinary.config({
 
 export const uploadOnCloudinary = async (filepath: string) => {
     const result = await cloudinary.uploader.upload(filepath)
+    unlinkSync(filepath)
     return { public_id: result.public_id, url: result.secure_url }
 }
 
 
 export const gentoken = (userid: string) => {
     return jwt.sign({ id: userid }, process.env.JWT_SECRET as string, { expiresIn: "15m" })
+}
+
+export const eventEmiter = (req: Request, event: string, users: string[], data?: string) => {
+    console.log("event emiting", event)
 }

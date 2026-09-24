@@ -30,7 +30,7 @@ export const signup = asyncHandler(async (req, res, next) => {
         return next(new AppError(400, "user already exist"))
     }
     const profiledata = await uploadOnCloudinary(avatar.path)
-    const { _id } = await User.create({
+    const user = await User.create({
         name,
         username,
         password,
@@ -38,7 +38,7 @@ export const signup = asyncHandler(async (req, res, next) => {
         avatar: { public_id: profiledata.public_id, url: profiledata.url }
     })
 
-    const token = gentoken(_id.toString())
+    const token = gentoken(user._id.toString())
 
     console.log({ name, username, password, avatar, bio })
 
