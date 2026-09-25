@@ -1,7 +1,7 @@
 import { Schema, Types, model } from "mongoose";
 
 
-interface ChatSchema {
+export interface ChatSchema {
     name: string,
     groupChat: boolean,
     creator: Types.ObjectId,

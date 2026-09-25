@@ -6,7 +6,7 @@ export interface ImgType {
     url: string
 }
 
-export interface User {
+export interface UserType {
     avatar: ImgType,
     name: string,
     username: string,
@@ -14,7 +14,7 @@ export interface User {
     bio: string,
 }
 
-const schema = new Schema<User>({
+const schema = new Schema<UserType>({
     name: {
         type: String,
         required: true
@@ -50,4 +50,4 @@ schema.pre("save", async function () {
     this.password = await bcrypt.hash(this.password, 10)
 })
 
-export const User = model<User>("User", schema)
+export const User = model<UserType>("User", schema)

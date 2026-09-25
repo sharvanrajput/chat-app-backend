@@ -10,7 +10,7 @@ const option = {
     httpOnly: true,
     secure: false,
     sameSite: "lax" as const,
-    maxAge: 1000 * 60 * 15
+    maxAge: 1000 * 60 * 60 * 24
 }
 
 export const signup = asyncHandler(async (req, res, next) => {
