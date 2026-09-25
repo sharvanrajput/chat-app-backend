@@ -92,7 +92,7 @@ export const addMemberInGroup = asyncHandler(async (req, res, next) => {
         username: string;
     }
     type AddMemberBody = {
-        chatid: Types.ObjectId;
+        chatid: string;
         members: string[];
     };
     const { chatid, members }: AddMemberBody = req.body
@@ -113,7 +113,7 @@ export const addMemberInGroup = asyncHandler(async (req, res, next) => {
 
     const allMembers = await Promise.all(allMembersPromise)
 
-    const allUniqueMember = allMembers.filter((i) => !chat.members.includes(i?._id.toString())).map(i => i._id)
+    const allUniqueMember = allMembers.filter((i) => !chat.members.includes(i?.toString())).map(i => i._id)
 
 
     if (allUniqueMember.some((member) => member === null)) {
@@ -135,7 +135,7 @@ export const addMemberInGroup = asyncHandler(async (req, res, next) => {
 export const removeMember = asyncHandler(async (req, res, next) => {
     type BodyType = {
         chatid: Types.ObjectId,
-        userid: Types.ObjectId
+        userid: string
     }
     const { chatid, userid }: BodyType = req.body
 
@@ -158,7 +158,7 @@ export const removeMember = asyncHandler(async (req, res, next) => {
     }
 
     chat.members = chat.members.filter(
-        (member) => member.toString() !== userid 
+        (member) => member.toString() !== userid
     )
 
     await chat.save()
