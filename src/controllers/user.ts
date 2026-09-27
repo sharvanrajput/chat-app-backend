@@ -68,6 +68,7 @@ export const signin = asyncHandler(async (req, res, next) => {
 
     const token = gentoken(user._id.toString())
 
+
     return res.cookie("token", token, option).status(200).json({ success: true, message: "Login Successfuly" })
 
 })

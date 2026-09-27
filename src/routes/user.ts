@@ -7,10 +7,10 @@ const userRouter = Router()
 
 userRouter.post("/signup", uploadFile("avatars").single("avatar"), signup)
 userRouter.post("/signin", signin)
-userRouter.post("/logout", logout)
 
 userRouter.use(isAuth)
 
+userRouter.post("/logout", logout)
 userRouter.post("/me", me)
 
 export default userRouter
