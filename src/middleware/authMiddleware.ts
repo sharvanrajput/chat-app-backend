@@ -1,7 +1,8 @@
 import { AppError } from "../utils/error.js";
 import jwt from "jsonwebtoken"
 import { asyncHandler } from "../utils/helper.js";
-interface JwtPayoad { id: string, iat: number, exp: number }
+import type { Types } from "mongoose";
+interface JwtPayoad { id: Types.ObjectId, iat: number, exp: number }
 
 export const isAuth = asyncHandler(async (req, res, next) => {
     const token = req.cookies.token || req.headers.authorization?.split(" ")[0]
@@ -18,7 +19,6 @@ export const isAuth = asyncHandler(async (req, res, next) => {
     req.user = {
         id: decode?.id
     }
-
     return next()
 
 })

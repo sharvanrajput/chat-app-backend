@@ -11,6 +11,6 @@ userRouter.post("/signin", signin)
 userRouter.use(isAuth)
 
 userRouter.post("/logout", logout)
-userRouter.post("/me", me)
+userRouter.get("/me", me)
 
 export default userRouter

@@ -1,7 +1,7 @@
 import { Schema, Types, model } from "mongoose";
 import type { ImgType } from "./user.js";
 
-interface MessageSchema {
+export  interface MessageSchema {
     content: string,
     attachments: ImgType[],
     sender: Types.ObjectId,
@@ -27,7 +27,7 @@ const schema = new Schema<MessageSchema>({
     },
     chatid: {
         type: Types.ObjectId,
-        ref: "User",
+        ref: "Chat",
         required: true
     },
 }, { timestamps: true })

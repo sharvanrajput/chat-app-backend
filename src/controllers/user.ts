@@ -29,13 +29,20 @@ export const signup = asyncHandler(async (req, res, next) => {
     if (existing) {
         return next(new AppError(400, "user already exist"))
     }
-    const profiledata = await uploadOnCloudinary(avatar.path)
+    const profiledata = await uploadOnCloudinary([avatar.path])
+
+    const profile = profiledata[0]
+
+    if (!profile) {
+        return next(new AppError(400, "profile data is required"))
+    }
+
     const user = await User.create({
         name,
         username,
         password,
         bio,
-        avatar: { public_id: profiledata.public_id, url: profiledata.url }
+        avatar: { public_id: profile.public_id, url: profile.url }
     })
 
     const token = gentoken(user._id.toString())
@@ -43,7 +50,6 @@ export const signup = asyncHandler(async (req, res, next) => {
     console.log({ name, username, password, avatar, bio })
 
     return res.cookie("token", token, option).status(201).json({ success: true, message: "Register Successfuly" })
-
 })
 
 export const signin = asyncHandler(async (req, res, next) => {
@@ -76,6 +82,7 @@ export const signin = asyncHandler(async (req, res, next) => {
 export const logout = asyncHandler(async (req, res, next) => {
     return res.clearCookie("token", option).status(200).json({ success: true, message: "logout Successfuly" })
 })
+
 export const me = asyncHandler(async (req, res, next) => {
     console.log(req.user.id)
     const user = await User.findById(req.user.id)

@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs"
 
 export interface ImgType {
     public_id: string,
-    url: string
+    url?: string
+    secure_url?: string
 }
 
 export interface UserType {

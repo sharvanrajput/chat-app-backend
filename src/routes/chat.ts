@@ -1,8 +1,17 @@
 import { Router } from "express";
-import { logout, me, signin, signup } from "../controllers/user.js";
-import { uploadFile } from "../middleware/multer.js";
+import {
+    addMemberInGroup,
+    deleteChat,
+    getChatDetails,
+    getMyChat, getMYGroup,
+    leaveGroup,
+    newGroupChat, removeMember,
+    renameGroup,
+    sendFile,
+    getMessages
+} from "../controllers/chat.js";
 import { isAuth } from "../middleware/authMiddleware.js";
-import { addMemberInGroup, getMyChat, getMYGroup, newGroupChat, removeMember , leaveGroup , sendFile} from "../controllers/chat.js";
+import { uploadFile } from "../middleware/multer.js";
 
 const chatRouter = Router()
 
@@ -13,13 +22,16 @@ chatRouter.get("/my", getMyChat)
 chatRouter.get("/my/group", getMYGroup)
 chatRouter.put("/addmember", addMemberInGroup)
 chatRouter.put("/removemember", removeMember)
-chatRouter.put("/leave/:id",leaveGroup)
+chatRouter.delete("/leave/:id", leaveGroup)
 
 // send attachment
-
-chatRouter.put("/message",uploadFile("attachment").array("files", 5 ) , sendFile )
+chatRouter.post("/message", uploadFile("attachment").array("attachments", 5), sendFile)
 
 // get messages
+chatRouter.post("/message/:id", getMessages)
+
 // get chat details , rename , delete
+
+chatRouter.route("/:id").get(getChatDetails).put(renameGroup).delete(deleteChat)
 
 export default chatRouter
