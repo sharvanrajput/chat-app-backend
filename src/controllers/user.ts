@@ -1,9 +1,12 @@
 
 import bcrypt from "bcryptjs"
 import { User, type ImgType } from "../models/user.js"
-import { asyncHandler, gentoken, uploadOnCloudinary } from "../utils/helper.js"
+import { asyncHandler, eventEmiter, gentoken, uploadOnCloudinary } from "../utils/helper.js"
 import { error } from "node:console"
 import { AppError } from "../utils/error.js"
+import { Chat } from "../models/chat.js"
+import { Request } from "../models/request.js"
+import { NEW_REQUEST } from "../constants/events.js"
 
 
 const option = {
@@ -86,5 +89,68 @@ export const logout = asyncHandler(async (req, res, next) => {
 export const me = asyncHandler(async (req, res, next) => {
     console.log(req.user.id)
     const user = await User.findById(req.user.id)
-    return res.status(200).json({ success: true, message: "logout Successfuly", user })
+    return res.status(200).json({ success: true, user })
+})
+
+export const searchUser = asyncHandler(async (req, res, next) => {
+    const { name } = req.query
+
+    const myChats = await Chat.find({ groupChat: false, members: req.user.id })
+    const allUserFromMyChats = myChats.map(chat => chat.members).flat()
+    const allUserExceptMeAndFriends = await User.find({
+        _id: { $nin: allUserFromMyChats },
+        name: { $regex: name, $options: "i" }
+    })
+    const users = allUserExceptMeAndFriends.map(({ _id, name, avatar }) => (
+        { _id, name, avatar: avatar.url }
+    ))
+
+    return res.status(200).json({ success: true, users })
+})
+
+export const sendRequest = asyncHandler(async (req, res, next) => {
+    const { userid } = req.body
+
+    const request = await Request.findOne({
+        $or: [
+            { sender: req.user.id, reciver: userid },
+            { sender: userid, reciver: req.user.id }
+        ]
+    })
+
+    if (request) return next(new AppError(400, "Request already send"))
+
+    await Request.create({
+        sender: req.user.id,
+        reciver: userid
+    })
+
+    eventEmiter(req, NEW_REQUEST, [userid])
+
+    return res.status(200).json({ success: true, msg: "Frequend request sent" })
+})
+export const acceptRequest = asyncHandler(async (req, res, next) => {
+    const { requestid, accept } = req.body
+
+    const request = await Request.findById({ requestid }).populate("sender", "name").populate("reciver", "name")
+
+    if (!request) return next(new AppError(400, "Request not found"))
+
+    if (request.reciver !== req.user.id) return next(new AppError(400, "You are not authorize to accept this request"))
+
+    if (!accept) {
+        await request.deleteOne()
+        return res.status(200).json({ success: true, msg: "Friend Request Rejected" })
+    }
+
+    const members = [request.sender._id, request.reciver._id]
+
+    await Promise.all([
+        Chat.create({
+            members,
+            name: `${request.sender.name}-${request.reciver.name}`
+        })
+    ])
+
+    return res.status(200).json({ success: true, msg: "Frequend request sent" })
 })

@@ -3,32 +3,33 @@ import {
     addMemberInGroup,
     deleteChat,
     getChatDetails,
+    getMessages,
     getMyChat, getMYGroup,
     leaveGroup,
     newGroupChat, removeMember,
     renameGroup,
-    sendFile,
-    getMessages
+    sendFile
 } from "../controllers/chat.js";
 import { isAuth } from "../middleware/authMiddleware.js";
 import { uploadFile } from "../middleware/multer.js";
+import { addMemberValidator, chatIdValidator, leaveGroupValidator, newGroupValidator, sendAttachmentValidator, validationHandler } from "../validator/validator.js";
 
 const chatRouter = Router()
 
 chatRouter.use(isAuth)
 
-chatRouter.post("/new", newGroupChat)
+chatRouter.post("/new", newGroupValidator(), validationHandler, newGroupChat)
 chatRouter.get("/my", getMyChat)
 chatRouter.get("/my/group", getMYGroup)
-chatRouter.put("/addmember", addMemberInGroup)
-chatRouter.put("/removemember", removeMember)
-chatRouter.delete("/leave/:id", leaveGroup)
+chatRouter.put("/addmember", addMemberValidator(), validationHandler, addMemberInGroup)
+chatRouter.put("/removemember", chatIdValidator(), validationHandler, removeMember)
+chatRouter.delete("/leave/:id", chatIdValidator(), validationHandler, leaveGroup)
 
 // send attachment
-chatRouter.post("/message", uploadFile("attachment").array("attachments", 5), sendFile)
+chatRouter.post("/message", uploadFile("attachment").array("attachments", 5), sendAttachmentValidator(), validationHandler, sendFile)
 
 // get messages
-chatRouter.post("/message/:id", getMessages)
+chatRouter.get("/message/:id", chatIdValidator(), validationHandler, getMessages)  
 
 // get chat details , rename , delete
 

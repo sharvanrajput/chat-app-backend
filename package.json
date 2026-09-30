@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
+    "seed": "npm run build && node ./dist/seeder/seed.js",
     "start": "node ./dist/app.js",
     "dev": "node --watch ./dist/app.js"
   },
@@ -22,6 +23,7 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.3",
     "express": "^5.2.1",
+    "express-validator": "^7.3.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.10.2",
     "multer": "^2.4.0",

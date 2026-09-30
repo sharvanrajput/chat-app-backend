@@ -1,109 +1,73 @@
-import { faker } from "@faker-js/faker";
-import dotenv from "dotenv";
-import mongoose from "mongoose";
-import { connectDb } from "../config/db.js";
-import { Chat } from "../models/chat.js";
-import { User } from "../models/user.js";
+import { faker } from "@faker-js/faker"
+import dotenv from "dotenv"
+import mongoose from "mongoose"
+import { connectDb } from "../config/db.js"
+import { Chat } from "../models/chat.js"
+import { Message } from "../models/messages.js"
+import { User } from "../models/user.js"
 
-dotenv.config();
-faker.seed(20260928);
+const seedCount = 50
 
-const USER_COUNT = 50;
-const DIRECT_CHAT_COUNT = 50;
-const GROUP_CHAT_COUNT = 20;
-const PASSWORD = "123456";
+dotenv.config()
 
-const seedDatabase = async () => {
-    await connectDb();
+const createFakeData = async () => {
+    const users = await User.create(Array.from({ length: seedCount }, () => ({
+        name: faker.person.fullName(),
+        username: `${faker.internet.username().toLowerCase()}_${faker.string.alphanumeric(8).toLowerCase()}`,
+        password: faker.internet.password(),
+        bio: faker.lorem.sentence(),
+        avatar: {
+            public_id: faker.string.uuid(),
+            url: `https://i.pravatar.cc/150?img=${faker.number.int({ min: 1, max: 70 })}`,
+        },
+    })))
 
-    try {
-        const usernames = Array.from(
-            { length: USER_COUNT },
-            (_, index) => `seed_user_${String(index + 1).padStart(2, "0")}`,
-        );
-        const existingUsers = await User.find({ username: { $in: usernames } });
-        const usersByUsername = new Map(
-            existingUsers.map((user) => [user.username, user]),
-        );
+    const singleChats = await Chat.create(Array.from({ length: seedCount }, () => {
+        const participants = faker.helpers.shuffle(users).slice(0, 2)
+        const creator = participants[0]!
+        const otherMember = participants[1]!
 
-        const missingUsers = usernames
-            .filter((username) => !usersByUsername.has(username))
-            .map((username) => ({
-                name: faker.person.fullName(),
-                username,
-                password: PASSWORD,
-                bio: faker.lorem.sentence(),
-                avatar: {
-                    public_id: faker.string.uuid(),
-                    url: faker.image.avatar(),
-                },
-            }));
-
-        const createdUsers = await User.create(missingUsers);
-        for (const user of createdUsers) {
-            usersByUsername.set(user.username, user);
+        return {
+            name: `${creator.name} & ${otherMember.name}`,
+            groupChat: false,
+            creator: creator._id,
+            members: participants.map((user) => user._id),
         }
+    }))
 
-        const users = usernames.map((username) => {
-            const user = usersByUsername.get(username);
-            if (!user) {
-                throw new Error(`Could not load seeded user ${username}`);
-            }
-            return user;
-        });
+    const groupChats = await Chat.create(Array.from({ length: seedCount }, () => {
+        const participants = faker.helpers.shuffle(users).slice(0, faker.number.int({ min: 3, max: 8 }))
+        const creator = participants[0]!
 
-        const userAt = (index: number) => {
-            const user = users[index];
-            if (!user) {
-                throw new Error(`No seeded user at index ${index}`);
-            }
-            return user;
-        };
+        return {
+            name: faker.company.name(),
+            groupChat: true,
+            creator: creator._id,
+            members: participants.map((user) => user._id),
+        }
+    }))
 
-        const chatSeeds = [
-            ...Array.from({ length: DIRECT_CHAT_COUNT }, (_, index) => {
-                const members = [userAt(index), userAt((index + 1) % USER_COUNT)];
-                return {
-                    name: `Seed Direct Chat ${String(index + 1).padStart(2, "0")}`,
-                    groupChat: false,
-                    creator: userAt(index)!._id,
-                    members: members.map((user) => user._id),
-                };
-            }),
-            ...Array.from({ length: GROUP_CHAT_COUNT }, (_, index) => {
-                const creator = userAt((index * 5) % USER_COUNT)!;
-                const members = Array.from({ length: 5 }, (_, memberIndex) =>
-                    userAt((index * 5 + memberIndex) % USER_COUNT),
-                );
-                return {
-                    name: `Seed Group ${String(index + 1).padStart(2, "0")}`,
-                    groupChat: true,
-                    creator: creator._id,
-                    members: members.map((user) => user._id),
-                };
-            }),
-        ];
+    const chats = [...singleChats, ...groupChats]
+    await Message.create(Array.from({ length: seedCount }, () => {
+        const chat = faker.helpers.arrayElement(chats)
 
-        const chatNames = chatSeeds.map(({ name }) => name);
-        const existingChats = await Chat.find({ name: { $in: chatNames } });
-        const existingChatNames = new Set(existingChats.map(({ name }) => name));
-        const missingChats = chatSeeds.filter(
-            ({ name }) => !existingChatNames.has(name),
-        );
+        return {
+            content: faker.lorem.sentence(),
+            attachments: [],
+            sender: faker.helpers.arrayElement(chat.members),
+            chatid: chat._id,
+        }
+    }))
 
-        await Chat.insertMany(missingChats);
+    console.log(`Created ${users.length} users, ${singleChats.length} single chats, ${groupChats.length} group chats, and ${seedCount} messages.`)
+}
 
-        console.log(
-            `Seed complete: ${createdUsers.length} users created, ` +
-            `${missingChats.length} chats created (${DIRECT_CHAT_COUNT} direct + ${GROUP_CHAT_COUNT} groups requested).`,
-        );
-        console.log(`Seed account password: ${PASSWORD}`);
-    } finally {
-        await mongoose.disconnect();
-    }
-};
-
-seedDatabase().catch((error: unknown) => {
-    console.error("Database seeding failed:", error);
-    process.exitCode = 1;
-});
+try {
+    await connectDb()
+    await createFakeData()
+} catch (error) {
+    console.error("Failed to seed fake chat data:", error)
+    process.exitCode = 1
+} finally {
+    await mongoose.disconnect()
+}

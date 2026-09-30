@@ -1,12 +1,10 @@
+import { Types } from "mongoose";
 import { ALERT, NEW_ATTACHMENT, NEW_MESSAGE_ALERT, REFETCH_CHAT } from "../constants/events.js";
-import { Chat, type ChatSchema } from "../models/chat.js";
-import { User, type ImgType, type UserType } from "../models/user.js";
-import { Query, Types } from "mongoose";
-import { AppError } from "../utils/error.js";
-
-import { asyncHandler, delCloudnaryFile, eventEmiter, otherMembers, uploadOnCloudinary, type QueryType, type UploadFileType } from "../utils/helper.js";
-import type { types } from "node:ffi";
+import { Chat } from "../models/chat.js";
 import { Message, type MessageSchema } from "../models/messages.js";
+import { User, type ImgType } from "../models/user.js";
+import { AppError } from "../utils/error.js";
+import { asyncHandler, delCloudnaryFile, eventEmiter, otherMembers, uploadOnCloudinary } from "../utils/helper.js";
 
 export const newGroupChat = asyncHandler(async (req, res, next) => {
     const { name, members } = req.body;
@@ -14,11 +12,7 @@ export const newGroupChat = asyncHandler(async (req, res, next) => {
     if (typeof name !== "string" || name.trim() === "") {
         return next(new AppError(400, "all fields are required"));
     }
-    if (members.length < 2) {
-        return next(
-            new AppError(400, "group Chat must have least 2 more member  "),
-        );
-    }
+    
 
     const allMembers = [...members, req.user.id];
 
@@ -34,6 +28,7 @@ export const newGroupChat = asyncHandler(async (req, res, next) => {
 
     return res.status(201).json({ success: true, message: "group created" });
 });
+
 export const getMyChat = asyncHandler(async (req, res, next) => {
     type PopulatedUser = {
         _id: string;
@@ -298,7 +293,6 @@ export const sendFile = asyncHandler(async (req, res, next) => {
     })
 })
 
-
 export const getChatDetails = asyncHandler(async (req, res, next) => {
     type ChatMemberType = {
         _id: Types.ObjectId, name: string, avatar: { url: string }
@@ -332,7 +326,6 @@ export const getChatDetails = asyncHandler(async (req, res, next) => {
     }
 })
 
-
 export const renameGroup = asyncHandler(async (req, res, next) => {
 
     const chatid = req.params.id
@@ -356,6 +349,7 @@ export const renameGroup = asyncHandler(async (req, res, next) => {
     })
 
 })
+
 export const deleteChat = asyncHandler(async (req, res, next) => {
 
     const chatid = req.params.id
@@ -399,24 +393,27 @@ export const deleteChat = asyncHandler(async (req, res, next) => {
 })
 
 export const getMessages = asyncHandler(async (req, res, next) => {
+
     if (!req.params.id) return next(new AppError(400, "Chat id is required"))
-    const chatid = new Types.ObjectId(req.params.id.toString());
+
+    const chatid = req.params.id
+
     const { page = 1 } = req.query
 
     const limit = 20;
     const skip = ((Number(page) - 1) * limit)
 
-    const messages = await Message.find({ chat: chatid })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate("sender", "name avatar")
-        .lean()
+    const [messages, msgCount] = await Promise.all([
+        await Message.find({ chatid })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate("sender", "name avatar")
+            .lean(),
+        await Message.countDocuments({ chatid })
+    ])
 
-    // const msgCount = messages.length
-    const msgCount = await Message.countDocuments({ chatid })
-
-    const totalpage = Math.ceil(msgCount / limit)
+    const totalpage = Math.ceil(msgCount / limit) || 0
 
     return res.status(200).json({
         success: false,
@@ -427,3 +424,11 @@ export const getMessages = asyncHandler(async (req, res, next) => {
     })
 
 })
+
+
+
+
+
+
+
+
