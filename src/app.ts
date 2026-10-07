@@ -5,6 +5,7 @@ import { connectDb } from "./config/db.js";
 import userRouter from "./routes/user.js";
 import { errorHandler } from "./utils/error.js";
 import chatRouter from "./routes/chat.js";
+import adminRouter from "./routes/admin.js";
 dotenv.config()
 
 const app = express()
@@ -16,6 +17,7 @@ app.use(cookieParser())
 
 app.use("/api/user", userRouter)
 app.use("/api/chat", chatRouter)
+app.use("/api/admin", adminRouter)
 
 
 app.use(errorHandler);

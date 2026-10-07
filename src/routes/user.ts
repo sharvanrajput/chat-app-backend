@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { logout, me, signin, signup, searchUser, sendRequest, acceptRequest } from "../controllers/user.js";
+import { logout, me, signin, signup, searchUser, sendRequest, acceptRequest, getAllNotification, getFrineds } from "../controllers/user.js";
 import { uploadFile } from "../middleware/multer.js";
 import { isAuth } from "../middleware/authMiddleware.js";
 import {
@@ -26,5 +26,7 @@ userRouter.get("/me", me)
 userRouter.get("/search", searchUser)
 userRouter.put("/sendrequest", sendRequestValidator(), validationHandler, sendRequest)
 userRouter.put("/acceptequest", acceptRequestValidator(), validationHandler, acceptRequest)
+userRouter.get("/getnotification", getAllNotification)
+userRouter.get("/getfriend", getFrineds)
 
 export default userRouter

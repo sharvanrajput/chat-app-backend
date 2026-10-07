@@ -31,7 +31,7 @@ export const newGroupChat = asyncHandler(async (req, res, next) => {
 
 export const getMyChat = asyncHandler(async (req, res, next) => {
     type PopulatedUser = {
-        _id: string;
+        _id: Types.ObjectId;
         avatar: ImgType;
         username: string;
     };

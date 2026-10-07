@@ -18,7 +18,6 @@ export const RegisterValidator = () => [
     body("username", "Please enter the username").notEmpty(),
     body("password", "Please enter the password").notEmpty(),
     body("bio", "Please enter the bio").notEmpty(),
-    check("avatar", "Please uplaod avatar").notEmpty()
 ]
 export const LoginValidator = () => [
     body("username", "Please enter the username").notEmpty(),
@@ -55,10 +54,13 @@ export const sendRequestValidator = () => [
     body("userid", "Please provide user id").notEmpty(),
 ]
 export const acceptRequestValidator = () => [
-    body("requestid", "Please provide user id").notEmpty(),
+    body("requestid", "Please provide request id").notEmpty(),
     body("accept")
         .notEmpty()
         .withMessage("Please provide accept")
         .isBoolean()
         .withMessage("Accept must be boolean")
+]
+export const adminLoginValidator = () => [
+    body("secretKey", "Please provide secret key id").notEmpty(),
 ]

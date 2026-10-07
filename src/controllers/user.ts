@@ -1,15 +1,17 @@
 
 import bcrypt from "bcryptjs"
 import { User, type ImgType } from "../models/user.js"
-import { asyncHandler, eventEmiter, gentoken, uploadOnCloudinary } from "../utils/helper.js"
+import { asyncHandler, eventEmiter, gentoken, otherMembers, uploadOnCloudinary } from "../utils/helper.js"
 import { error } from "node:console"
 import { AppError } from "../utils/error.js"
 import { Chat } from "../models/chat.js"
 import { Request } from "../models/request.js"
 import { NEW_REQUEST } from "../constants/events.js"
+import type { Types } from "mongoose"
+import type { types } from "node:ffi"
 
 
-const option = {
+export const option = {
     httpOnly: true,
     secure: false,
     sameSite: "lax" as const,
@@ -93,8 +95,11 @@ export const me = asyncHandler(async (req, res, next) => {
 })
 
 export const searchUser = asyncHandler(async (req, res, next) => {
-    const { name } = req.query
+    const { name = "" } = req.query
 
+    if (typeof name !== "string") {
+        return next(new AppError(400, "Invalid name"))
+    }
     const myChats = await Chat.find({ groupChat: false, members: req.user.id })
     const allUserFromMyChats = myChats.map(chat => chat.members).flat()
     const allUserExceptMeAndFriends = await User.find({
@@ -129,14 +134,20 @@ export const sendRequest = asyncHandler(async (req, res, next) => {
 
     return res.status(200).json({ success: true, msg: "Frequend request sent" })
 })
+
 export const acceptRequest = asyncHandler(async (req, res, next) => {
+    type PopulatedUser = {
+        _id: Types.ObjectId
+        name: string
+    }
     const { requestid, accept } = req.body
 
-    const request = await Request.findById({ requestid }).populate("sender", "name").populate("reciver", "name")
+    const request = await Request.findById(requestid).populate<{ sender: PopulatedUser }>("sender", "name").populate<{ reciver: PopulatedUser }>("reciver", "name")
+    console.log(request)
 
     if (!request) return next(new AppError(400, "Request not found"))
 
-    if (request.reciver !== req.user.id) return next(new AppError(400, "You are not authorize to accept this request"))
+    if (request.reciver._id.toString() !== req.user.id.toString()) return next(new AppError(400, "You are not authorize to accept this request"))
 
     if (!accept) {
         await request.deleteOne()
@@ -144,13 +155,90 @@ export const acceptRequest = asyncHandler(async (req, res, next) => {
     }
 
     const members = [request.sender._id, request.reciver._id]
-
     await Promise.all([
         Chat.create({
             members,
             name: `${request.sender.name}-${request.reciver.name}`
-        })
+        }),
+        request.deleteOne()
     ])
 
-    return res.status(200).json({ success: true, msg: "Frequend request sent" })
+    eventEmiter(req, NEW_REQUEST, members)
+
+    return res.status(200).json({ success: true, msg: "Frequend request sent", senderid: request.sender._id })
+})
+
+export const getAllNotification = asyncHandler(async (req, res, next) => {
+
+    type PopulatedUser = {
+        _id: Types.ObjectId
+        name: string,
+        avatar: {
+            public_id: string,
+            url: string
+        }
+    }
+
+    const request = await Request.find({ reciver: req.user.id })
+        .populate<{ sender: PopulatedUser }>("sender", "name avatar")
+        .populate<{ reciver: PopulatedUser }>("reciver", "name avatar")
+
+    return res.status(200).json({
+        success: true,
+        message: request
+    })
+
+})
+
+export const getFrineds = asyncHandler(async (req, res, next) => {
+    type MemberType = {
+        _id: Types.ObjectId;
+        name: string;
+        avatar: {
+            public_id: string
+            url: string
+        }
+    }
+    const { chatid } = req.body
+
+    const chats = await Chat.find({
+        groupChat: false,
+        members: req.user.id
+    }).populate<{ members: MemberType[] }>("members", "name avatar")
+
+    const friends = chats.map(({ members }) => {
+        const otherMember = otherMembers(members, req.user.id.toString())[0]
+
+        if (!otherMember) {
+            return next(new AppError(400, "Other member should not be null"))
+        }
+
+        return {
+            _id: otherMember._id,
+            name: otherMember.name,
+            avatar: otherMember.avatar
+        }
+    })
+
+    if (chatid) {
+        const chat = await Chat.findById(chatid)
+        if (!chat) {
+            return next(new AppError(400, "Chat not found"))
+        }
+
+        const availableFriend = friends.filter(
+            (friend) => {
+                return chat.members.includes(friend._id.toString())
+            }
+        )
+        return res.status(200).json({
+            success: true,
+            friends: availableFriend
+        })
+    } else {
+        return res.status(200).json({
+            success: true,
+            friends
+        })
+    }
 })

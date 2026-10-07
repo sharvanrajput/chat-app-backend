@@ -21,7 +21,7 @@ export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunctio
     }
 }
 
-const requiredEnv = (name: string): string => {
+export const requiredEnv = (name: string): string => {
     const value = process.env[name]
     if (!value) {
         throw new Error(`${name} is not configured`)
@@ -72,10 +72,11 @@ export const eventEmiter = (req: Request, event: string, users: Types.ObjectId[]
 }
 
 type MembetsType = {
-    _id: string;
-    avatar: ImgType;
-    username: string;
+    _id?: Types.ObjectId;
+    avatar?: ImgType;
+    username?: string;
+    name?: string;
 }
 export const otherMembers = (members: MembetsType[], id: string) => {
-    return members.filter((member) => member._id !== id)
+    return members.filter((member) => member._id?.toString() !== id.toString())
 }

@@ -1,11 +1,12 @@
 import { Schema, Types, model } from "mongoose";
 import type { ImgType } from "./user.js";
 
-export  interface MessageSchema {
+export interface MessageSchema {
     content: string,
     attachments: ImgType[],
     sender: Types.ObjectId,
     chatid: Types.ObjectId,
+    createdAt?: Date
 }
 
 const schema = new Schema<MessageSchema>({
