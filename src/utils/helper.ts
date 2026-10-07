@@ -1,82 +1,101 @@
-import "dotenv/config"
-import type { NextFunction, Request, Response } from "express"
-import jwt from "jsonwebtoken"
-import { v2 as cloudinary } from "cloudinary"
-import { unlinkSync } from "fs"
-import type { ImgType, User, UserType } from "../models/user.js"
-import type { Types } from "mongoose"
-import { AppError } from "./error.js"
+import "dotenv/config";
+import type { NextFunction, Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import { v2 as cloudinary } from "cloudinary";
+import { unlinkSync } from "fs";
+import { User, type ImgType, type UserType } from "../models/user.js";
+import type { Types } from "mongoose";
+import { AppError } from "./error.js";
+import { userSocketIDs } from "../app.js";
 
 export type ParamsType = {
-    id: string;
+  id: string;
 };
 
 export type QueryType = {
-    page?: string;
+  page?: string;
 };
 
-export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        Promise.resolve(fn(req, res, next)).catch(next)
-    }
-}
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>,
+) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
 
-export const requiredEnv = (name: string): string => {
-    const value = process.env[name]
-    if (!value) {
-        throw new Error(`${name} is not configured`)
-    }
-    return value
-}
+const requiredEnv = (name: string): string => {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is not configured`);
+  }
+  return value;
+};
 
 cloudinary.config({
-    cloud_name: requiredEnv("CLOUDINARY_CLOUD_NAME"),
-    api_key: requiredEnv("CLOUDINARY_API_KEY"),
-    api_secret: requiredEnv("CLOUDINARY_API_SECRET")
-})
+  cloud_name: requiredEnv("CLOUDINARY_CLOUD_NAME"),
+  api_key: requiredEnv("CLOUDINARY_API_KEY"),
+  api_secret: requiredEnv("CLOUDINARY_API_SECRET"),
+});
 
 export type UploadFileType = {
-    public_id: string;
-    url: string;
-}
+  public_id: string;
+  url: string;
+};
 
-export const uploadOnCloudinary = async (filepath: string[]): Promise<UploadFileType[]> => {
+export const uploadOnCloudinary = async (
+  filepath: string[],
+): Promise<UploadFileType[]> => {
+  const allCloudinaryFile = filepath.map((file) =>
+    cloudinary.uploader.upload(file),
+  );
 
-    const allCloudinaryFile = filepath.map(file => cloudinary.uploader.upload(file))
+  const result = await Promise.all(allCloudinaryFile);
 
-    const result = await Promise.all(allCloudinaryFile)
+  filepath.map((file) => unlinkSync(file));
 
-    filepath.map(file => unlinkSync(file))
+  const AlterData = result.map((data) => ({
+    public_id: data.public_id,
+    url: data.secure_url,
+  }));
 
-    const AlterData = result.map(data => ({ public_id: data.public_id, url: data.secure_url }))
+  return AlterData;
+};
 
-    return AlterData
-}
+export const delCloudnaryFile = async (
+  public_ids: string[],
+): Promise<unknown[]> => {
+  const promises = public_ids.map((id) => {
+    cloudinary.uploader.destroy(id);
+  });
 
-export const delCloudnaryFile = async (public_ids: string[]): Promise<unknown[]> => {
-    const promises = public_ids.map((id) => {
-        cloudinary.uploader.destroy(id)
-    })
-
-    return promises
-}
-
-
+  return promises;
+};
 
 export const gentoken = (userid: string) => {
-    return jwt.sign({ id: userid }, process.env.JWT_SECRET as string, { expiresIn: "1d" })
-}
+  return jwt.sign({ id: userid }, process.env.JWT_SECRET as string, {
+    expiresIn: "1d",
+  });
+};
 
-export const eventEmiter = (req: Request, event: string, users: Types.ObjectId[], data?: any) => {
-    console.log("event emiting", event)
-}
+export const eventEmiter = (
+  req: Request,
+  event: string,
+  users: Types.ObjectId[],
+  data?: any,
+) => {
+  console.log("event emiting", event);
+};
 
 type MembetsType = {
-    _id?: Types.ObjectId;
-    avatar?: ImgType;
-    username?: string;
-    name?: string;
-}
+  _id: string;
+  avatar: ImgType;
+  username: string;
+};
 export const otherMembers = (members: MembetsType[], id: string) => {
-    return members.filter((member) => member._id?.toString() !== id.toString())
-}
+  return members.filter((member) => member._id !== id);
+};
+
+export const getSockets = (users = []) => {
+  return users.map((user) => userSocketIDs.get(user._id.toString()));
+};
