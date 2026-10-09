@@ -24,7 +24,7 @@ export const asyncHandler = (
   };
 };
 
-const requiredEnv = (name: string): string => {
+export const requiredEnv = (name: string): string => {
   const value = process.env[name];
   if (!value) {
     throw new Error(`${name} is not configured`);

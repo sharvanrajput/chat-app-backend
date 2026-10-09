@@ -38,7 +38,6 @@ export const addMemberValidator = () => [
 export const chatIdValidator = () => [
     body("chatid", "Please enter chat id").notEmpty(),
     body("userid", "Please enter user id").notEmpty(),
-
 ]
 export const leaveGroupValidator = () => [
     param("id", "Please provide chat id").notEmpty(),
