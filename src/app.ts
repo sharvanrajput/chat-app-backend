@@ -1,32 +1,47 @@
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import { connectDb } from "./config/db.js";
-import userRouter from "./routes/user.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { errorHandler } from "./utils/error.js";
-import chatRouter from "./routes/chat.js";
-import { disconnect } from "cluster";
+import { connectDb } from "./config/db.js";
 import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "./constants/events.js";
-import { getSockets } from "./utils/helper.js";
 import { Message } from "./models/messages.js";
+import chatRouter from "./routes/chat.js";
+import userRouter from "./routes/user.js";
+import { errorHandler } from "./utils/error.js";
+import { getSockets } from "./utils/helper.js";
 dotenv.config();
 export const userSocketIDs = new Map();
 
 const port = 4000;
 const app = express();
 
+const allowedOrigin = [
+  "*",
+  "http://localhost:5173"
+]
+
+
+
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: allowedOrigin,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
   },
 });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use(cors({
+  origin: allowedOrigin,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}))
 
 app.use("/api/user", userRouter);
 app.use("/api/chat", chatRouter);

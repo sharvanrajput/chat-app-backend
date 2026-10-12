@@ -61,9 +61,7 @@ export const signin = asyncHandler(async (req, res, next) => {
 
     const { username, password } = req.body
 
-    if ([username, password].some(field => typeof field !== "string" || field.trim() === "")) {
-        return next(new AppError(400, "all fields are required"))
-    }
+
 
     const user = await User.findOne({ username }).select("+password")
 
@@ -80,7 +78,7 @@ export const signin = asyncHandler(async (req, res, next) => {
     const token = gentoken(user._id.toString())
 
 
-    return res.cookie("token", token, option).status(200).json({ success: true, message: "Login Successfuly" })
+    return res.cookie("token", token, option).status(200).json({ success: true, message: "Login Successfuly", token })
 
 })
 
